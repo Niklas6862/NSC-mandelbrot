@@ -1,14 +1,11 @@
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
-import time
 import cProfile
 import pstats
 import io
 
 
-def mandelbrot(width, height, max_iter,
-               xmin, xmax, ymin, ymax):
-
+def mandelbrot(width, height, max_iter, xmin, xmax, ymin, ymax):
     img = [[0] * width for _ in range(height)]
 
     for y in range(height):
@@ -30,21 +27,72 @@ def mandelbrot(width, height, max_iter,
     return img
 
 
+def mandelbrot_numpy(width, height, max_iter, xmin, xmax, ymin, ymax):
+    x = np.linspace(xmin, xmax, width)
+    y = np.linspace(ymin, ymax, height)
+    X, Y = np.meshgrid(x, y)
+    C = X + 1j * Y
+    Z = np.zeros_like(C)
+
+    img = np.zeros(C.shape, dtype=np.int32)
+
+    for n in range(max_iter):
+        mask = (Z.real * Z.real + Z.imag * Z.imag) <= 4.0
+        Z[mask] = Z[mask] * Z[mask] + C[mask]
+        img[mask] = n + 1
+
+    return img
+
+
+def profile_call(label, func, *args, sort_by="cumulative", top=25, dump_file=None):
+    pr = cProfile.Profile()
+    pr.enable()
+    result = func(*args)
+    pr.disable()
+
+    s = io.StringIO()
+    stats = pstats.Stats(pr, stream=s).strip_dirs().sort_stats(sort_by)
+    stats.print_stats(top)
+
+    print(f"\n=== cProfile: {label} (sorted by {sort_by}) ===")
+    print(s.getvalue())
+
+    if dump_file:
+        pr.dump_stats(dump_file)
+
+    return result
+
+
 width = 1024
 height = 1024
 max_iter = 100
 xmin, xmax = -2.0, 1.0
 ymin, ymax = -1.5, 1.5
 
-pr = cProfile.Profile()
-pr.enable()
-data = mandelbrot(width, height, max_iter, xmin, xmax, ymin, ymax)
-pr.disable()
+naive_data = profile_call(
+    "mandelbrot (naive Python)",
+    mandelbrot,
+    width, height, max_iter, xmin, xmax, ymin, ymax,
+    top=100,
+)
 
-plt.imshow(data, extent=(xmin, xmax, ymin, ymax), origin="lower")
+numpy_data = profile_call(
+    "mandelbrot (NumPy)",
+    mandelbrot_numpy,
+    width, height, max_iter, xmin, xmax, ymin, ymax,
+    top=100,
+)
+
+plt.figure()
+plt.imshow(naive_data, extent=(xmin, xmax, ymin, ymax), origin="lower")
 plt.title("Mandelbrot set (naive Python)")
 plt.xlabel("Re")
 plt.ylabel("Im")
-plt.savefig("mandelbrot.png")
-plt.show()
+plt.savefig("mandelbrot_naive.png", dpi=150, bbox_inches="tight")
 
+plt.figure()
+plt.imshow(numpy_data, extent=(xmin, xmax, ymin, ymax), origin="lower")
+plt.title("Mandelbrot set (NumPy)")
+plt.xlabel("Re")
+plt.ylabel("Im")
+plt.savefig("mandelbrot_numpy.png", dpi=150, bbox_inches="tight")
