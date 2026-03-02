@@ -7,3 +7,5 @@ dask
 cProfile
 pstats
 io
+njit
+prange

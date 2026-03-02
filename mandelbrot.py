@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import cProfile
 import pstats
 import io
+import numpy as np
+from numba import njit, prange
+import time
 
 
 def mandelbrot(width, height, max_iter, xmin, xmax, ymin, ymax):
@@ -62,6 +65,42 @@ def profile_call(label, func, *args, sort_by="cumulative", top=25, dump_file=Non
 
     return result
 
+def time_call(label, func, *args, repeat=5):
+    best = None
+    for _ in range(repeat):
+        t0 = time.perf_counter()
+        func(*args)
+        t1 = time.perf_counter()
+        dt = t1 - t0
+        best = dt if best is None else min(best, dt)
+    print(f"{label}: best of {repeat} = {best:.6f} s")
+
+
+@njit(parallel=True, fastmath=True)
+def mandelbrot_numba(width, height, max_iter, xmin, xmax, ymin, ymax):
+    img = np.empty((height, width), dtype=np.int32)
+
+    for y in prange(height):
+        im = ymin + (y / (height - 1)) * (ymax - ymin)
+        for x in range(width):
+            re = xmin + (x / (width - 1)) * (xmax - xmin)
+
+            zr = 0.0
+            zi = 0.0
+            cr = re
+            ci = im
+
+            n = 0
+            while n < max_iter and (zr*zr + zi*zi) <= 4.0:
+                zr_new = zr*zr - zi*zi + cr
+                zi = 2.0*zr*zi + ci
+                zr = zr_new
+                n += 1
+
+            img[y, x] = n
+
+    return img
+
 
 width = 1024
 height = 1024
@@ -83,6 +122,25 @@ numpy_data = profile_call(
     top=100,
 )
 
+
+mandelbrot_numba(width, height, max_iter, xmin, xmax, ymin, ymax)
+
+
+numba_data = profile_call(
+    "mandelbrot (Numba, warmed up)",
+    mandelbrot_numba,
+    width, height, max_iter, xmin, xmax, ymin, ymax,
+    top=100,
+)
+
+#Time on the numba kernel instead of only cProfile
+time_call(
+    "mandelbrot (Numba, warmed up)",
+    mandelbrot_numba,
+    width, height, max_iter, xmin, xmax, ymin, ymax,
+    repeat=5,
+)
+
 plt.figure()
 plt.imshow(naive_data, extent=(xmin, xmax, ymin, ymax), origin="lower")
 plt.title("Mandelbrot set (naive Python)")
@@ -96,3 +154,10 @@ plt.title("Mandelbrot set (NumPy)")
 plt.xlabel("Re")
 plt.ylabel("Im")
 plt.savefig("mandelbrot_numpy.png", dpi=150, bbox_inches="tight")
+
+data = mandelbrot_numba(width, height, max_iter, xmin, xmax, ymin, ymax)
+plt.imshow(data, extent=(xmin, xmax, ymin, ymax), origin="lower")
+plt.title("Mandelbrot set (Numba)")
+plt.xlabel("Re")
+plt.ylabel("Im")
+plt.savefig("mandelbrot_numba.png", dpi=150, bbox_inches="tight")
