@@ -1,6 +1,9 @@
 import numpy
 import matplotlib.pyplot as plt
 import time
+import cProfile
+import pstats
+import io
 
 
 def mandelbrot(width, height, max_iter,
@@ -29,22 +32,19 @@ def mandelbrot(width, height, max_iter,
 
 width = 1024
 height = 1024
-max_iter = 200
+max_iter = 100
 xmin, xmax = -2.0, 1.0
 ymin, ymax = -1.5, 1.5
 
-start = time.time()
-
+pr = cProfile.Profile()
+pr.enable()
 data = mandelbrot(width, height, max_iter, xmin, xmax, ymin, ymax)
-
-end = time.time()
-runtime = end - start
-
-print("Runtime:", runtime, "seconds")
+pr.disable()
 
 plt.imshow(data, extent=(xmin, xmax, ymin, ymax), origin="lower")
 plt.title("Mandelbrot set (naive Python)")
 plt.xlabel("Re")
 plt.ylabel("Im")
+plt.savefig("mandelbrot.png")
 plt.show()
 

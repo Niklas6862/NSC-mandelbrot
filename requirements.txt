@@ -4,3 +4,6 @@ scipy
 numba
 pytest
 dask
+cProfile
+pstats
+io
