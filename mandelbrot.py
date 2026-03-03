@@ -160,10 +160,43 @@ def mandelbrot_numba_basic_f32(width, height, max_iter, xmin, xmax, ymin, ymax):
 
     return img
 
+@njit(fastmath=True)
+def mandelbrot_numba_basic_f16(width, height, max_iter, xmin, xmax, ymin, ymax):
+    img = np.empty((height, width), dtype=np.int32)
+
+    xmin_f = np.float16(xmin)
+    xmax_f = np.float16(xmax)
+    ymin_f = np.float16(ymin)
+    ymax_f = np.float16(ymax)
+
+    for y in range(height):
+        im = ymin_f + (np.float16(y) / (height - 1)) * (ymax_f - ymin_f)
+
+        for x in range(width):
+            re = xmin_f + (np.float16(x) / (width - 1)) * (xmax_f - xmin_f)
+
+            zr = np.float16(0.0)
+            zi = np.float16(0.0)
+            cr = re
+            ci = im
+
+            n = 0
+            while n < max_iter and (zr * zr + zi * zi) <= np.float16(4.0):
+                zr_new = zr * zr - zi * zi + cr
+                zi = np.float16(2.0) * zr * zi + ci
+                zr = zr_new
+                n += 1
+
+            img[y, x] = n
+
+    return img
+
 
 def mandelbrot_numba_basic(width, height, max_iter, xmin, xmax, ymin, ymax, dtype=np.float64):
     if dtype == np.float32:
         return mandelbrot_numba_basic_f32(width, height, max_iter, xmin, xmax, ymin, ymax)
+    elif dtype == np.float16:
+        return mandelbrot_numba_basic_f16(width, height, max_iter, xmin, xmax, ymin, ymax)
     return mandelbrot_numba_basic_f64(width, height, max_iter, xmin, xmax, ymin, ymax)
 
 
@@ -279,7 +312,7 @@ plt.savefig("mandelbrot_numpy.png", dpi=150, bbox_inches="tight")
 
 plt.figure()
 plt.imshow(numba_basic, extent=(xmin, xmax, ymin, ymax), origin="lower")
-plt.title("Mandelbrot set (Numba basic)")
+plt.title("Mandelbrot set (Numba basic float 64)")
 plt.xlabel("Re")
 plt.ylabel("Im")
 plt.savefig("mandelbrot_numba_basic.png", dpi=150, bbox_inches="tight")
