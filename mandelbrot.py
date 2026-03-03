@@ -4,7 +4,7 @@ import cProfile
 import pstats
 import io
 import time
-from numba import njit, prange
+from numba import float64, njit, prange
 
 
 def time_call(label, func, *args):
@@ -25,7 +25,7 @@ def profile_call(label, func, *args, sort_by="cumulative", top=25, dump_file=Non
     stats = pstats.Stats(pr, stream=s).strip_dirs().sort_stats(sort_by)
     stats.print_stats(top)
 
-    print(f"\n=== cProfile: {label} (sorted by {sort_by}) ===")
+    print(f"\n cProfile: {label} (sorted by {sort_by}) \n")
     print(s.getvalue())
 
     if dump_file:
@@ -51,7 +51,7 @@ def line_profile_call(label, func, *args, extra_funcs=()):
 
     result = lp.runcall(func, *args)
 
-    print(f"\n=== line_profiler: {label} ===")
+    print(f"\n line_profiler: {label} \n")
     lp.print_stats()
 
     return result
@@ -80,38 +80,6 @@ def mandelbrot_naive(width, height, max_iter, xmin, xmax, ymin, ymax):
     return img
 
 
-@njit(fastmath=True)
-def mandelbrot_numba_basic(width, height, max_iter, xmin, xmax, ymin, ymax, dtype):
-    img = np.empty((height, width), dtype=np.int32)
-    
-    xmin_f = dtype(xmin)
-    xmax_f = dtype(xmax)
-    ymin_f = dtype(ymin)
-    ymax_f = dtype(ymax)
-
-    for y in range(height):
-        im = ymin_f + (dtype(y) / (height - 1)) * (ymax_f - ymin_f)
-
-        for x in range(width):
-            re = xmin_f + (dtype(x) / (width - 1)) * (xmax_f - xmin_f)
-
-            zr = dtype(0.0)
-            zi = dtype(0.0)
-            cr = re
-            ci = im
-
-            n = 0
-            while n < max_iter and (zr * zr + zi * zi) <= dtype(4.0):
-                zr_new = zr * zr - zi * zi + cr
-                zi = dtype(2.0) * zr * zi + ci
-                zr = zr_new
-                n += 1
-
-            img[y, x] = n
-
-    return img
-
-
 def mandelbrot_numpy(width, height, max_iter, xmin, xmax, ymin, ymax):
     x = np.linspace(xmin, xmax, width)
     y = np.linspace(ymin, ymax, height)
@@ -127,6 +95,76 @@ def mandelbrot_numpy(width, height, max_iter, xmin, xmax, ymin, ymax):
         img[mask] = n + 1
 
     return img
+
+
+@njit(fastmath=True)
+def mandelbrot_numba_basic_f64(width, height, max_iter, xmin, xmax, ymin, ymax):
+    img = np.empty((height, width), dtype=np.int32)
+
+    xmin_f = np.float64(xmin)
+    xmax_f = np.float64(xmax)
+    ymin_f = np.float64(ymin)
+    ymax_f = np.float64(ymax)
+
+    for y in range(height):
+        im = ymin_f + (np.float64(y) / (height - 1)) * (ymax_f - ymin_f)
+
+        for x in range(width):
+            re = xmin_f + (np.float64(x) / (width - 1)) * (xmax_f - xmin_f)
+
+            zr = np.float64(0.0)
+            zi = np.float64(0.0)
+            cr = re
+            ci = im
+
+            n = 0
+            while n < max_iter and (zr * zr + zi * zi) <= np.float64(4.0):
+                zr_new = zr * zr - zi * zi + cr
+                zi = np.float64(2.0) * zr * zi + ci
+                zr = zr_new
+                n += 1
+
+            img[y, x] = n
+
+    return img
+
+
+@njit(fastmath=True)
+def mandelbrot_numba_basic_f32(width, height, max_iter, xmin, xmax, ymin, ymax):
+    img = np.empty((height, width), dtype=np.int32)
+
+    xmin_f = np.float32(xmin)
+    xmax_f = np.float32(xmax)
+    ymin_f = np.float32(ymin)
+    ymax_f = np.float32(ymax)
+
+    for y in range(height):
+        im = ymin_f + (np.float32(y) / (height - 1)) * (ymax_f - ymin_f)
+
+        for x in range(width):
+            re = xmin_f + (np.float32(x) / (width - 1)) * (xmax_f - xmin_f)
+
+            zr = np.float32(0.0)
+            zi = np.float32(0.0)
+            cr = re
+            ci = im
+
+            n = 0
+            while n < max_iter and (zr * zr + zi * zi) <= np.float32(4.0):
+                zr_new = zr * zr - zi * zi + cr
+                zi = np.float32(2.0) * zr * zi + ci
+                zr = zr_new
+                n += 1
+
+            img[y, x] = n
+
+    return img
+
+
+def mandelbrot_numba_basic(width, height, max_iter, xmin, xmax, ymin, ymax, dtype=np.float64):
+    if dtype == np.float32:
+        return mandelbrot_numba_basic_f32(width, height, max_iter, xmin, xmax, ymin, ymax)
+    return mandelbrot_numba_basic_f64(width, height, max_iter, xmin, xmax, ymin, ymax)
 
 
 @njit(parallel=True, fastmath=True)
