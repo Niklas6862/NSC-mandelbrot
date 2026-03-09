@@ -1,0 +1,56 @@
+2026-03-03 2419dc4 file rename
+
+ comparison.ipynb => comparison_w_questions_reflection.ipynb | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+2026-03-03 1aefe15 Reflections
+
+ comparison.ipynb | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+2026-03-03 a010fcb Added answers
+
+ comparison.ipynb           | 388 ++++++++++++++++-----------------------------
+ mandelbrot.py              |  35 +++-
+ mandelbrot_numba_basic.png | Bin 103636 -> 104634 bytes
+ requirements.txt           |  15 +-
+ 4 files changed, 178 insertions(+), 260 deletions(-)
+2026-03-03 baec14b Added comparison notebook
+
+ comparison.ipynb                                   | 374 ++++++++++++++++++++-
+ mandelbrot.py                                      |  90 +++--
+ mandelbrot_numba_basic.png                         | Bin 0 -> 103636 bytes
+ ...brot_numba.png => mandelbrot_numba_parallel.png | Bin
+ 4 files changed, 436 insertions(+), 28 deletions(-)
+2026-03-02 0a7c29b Added iterations of numba implementation
+
+ comparison.ipynb |  10 +++
+ mandelbrot.py    | 187 +++++++++++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 149 insertions(+), 48 deletions(-)
+2026-03-02 c2719e7 added mondelbrot created by numba
+
+ mandelbrot.py        |  67 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ mandelbrot_numba.png | Bin 0 -> 102746 bytes
+ requirements.txt     |   4 ++-
+ 3 files changed, 69 insertions(+), 2 deletions(-)
+2026-03-02 730aec5 Added mandelbrot using numpy
+
+ mandelbrot.png       | Bin 60081 -> 0 bytes
+ mandelbrot.py        |  72 ++++++++++++++++++++++++++++++++++++++++++---------
+ mandelbrot_naive.png | Bin 0 -> 103379 bytes
+ mandelbrot_numpy.png | Bin 0 -> 102947 bytes
+ 4 files changed, 60 insertions(+), 12 deletions(-)
+2026-03-02 561c9ca added cProfile
+
+ mandelbrot.png   | Bin 0 -> 60081 bytes
+ mandelbrot.py    |  16 ++++++++--------
+ requirements.txt |   5 ++++-
+ 3 files changed, 12 insertions(+), 9 deletions(-)
+2026-02-18 555d244 Initial mandelbrot
+
+ mandelbrot.py    | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ requirements.txt |  6 ++++++
+ 2 files changed, 56 insertions(+)
+2026-02-18 ee694a5 Initial commit
+
+ .gitignore | 207 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ README.md  |   1 +
+ 2 files changed, 208 insertions(+)
