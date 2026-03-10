@@ -253,13 +253,19 @@ def _worker_func(item):
     return mandelbrot_chunk(row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax)
 
 
-def mandelbrot_parallel(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
+def build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
     chunk_size = (height + n_workers - 1) // n_workers
-
     chunks = []
+
     for row_start in range(0, height, chunk_size):
         row_end = min(row_start + chunk_size, height)
         chunks.append((row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax))
+
+    return chunks
+
+
+def mandelbrot_parallel(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
+    chunks = build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers)
 
     with mp.Pool(processes=n_workers) as pool:
         parts = pool.map(_worker_func, chunks)
