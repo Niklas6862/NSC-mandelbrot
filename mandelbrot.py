@@ -207,60 +207,20 @@ def mandelbrot_numba_basic(width, height, max_iter, xmin, xmax, ymin, ymax, dtyp
         return mandelbrot_numba_basic_f16(width, height, max_iter, xmin, xmax, ymin, ymax)
     return mandelbrot_numba_basic_f64(width, height, max_iter, xmin, xmax, ymin, ymax)
 
-
-# Profiling & Timing
-
-# Line-profile naive
-naive_data = line_profile_call(
-    "mandelbrot (naive Python)",
-    mandelbrot_naive,
-    width, height, max_iter, xmin, xmax, ymin, ymax
-)
-
-time_call(
-    "mandelbrot (naive)",
-    mandelbrot_naive,
-    width, height, max_iter, xmin, xmax, ymin, ymax
-)
-
-# NumPy profiling
-numpy_data = profile_call(
-    "mandelbrot (NumPy)",
-    mandelbrot_numpy,
-    width, height, max_iter, xmin, xmax, ymin, ymax,
-    top=100
-)
-
-time_call(
-    "mandelbrot (NumPy)",
-    mandelbrot_numpy,
-    width, height, max_iter, xmin, xmax, ymin, ymax
-)
-
-# Numba naive-loop and profiling (warmed up)
-mandelbrot_numba_basic(width, height, max_iter, xmin, xmax, ymin, ymax, np.float64)
-
-numba_basic = profile_call(
-    "mandelbrot (Numba @njit naive loop, warmed up)",
-    mandelbrot_numba_basic,
-    width, height, max_iter, xmin, xmax, ymin, ymax, np.float64,
-    top=100
-)
-
-time_call(
-    "mandelbrot (Numba @njit naive loop, warmed up)",
-    mandelbrot_numba_basic,
-    width, height, max_iter, xmin, xmax, ymin, ymax, np.float64
-)
-
 # ------ L01 to L03 MP1 ------
 # ------ L04 MP2 ------
+
+import numpy as np
+from numba import njit
+import multiprocessing as mp
+
+
 @njit(fastmath=True)
 def mandelbrot_pixel(c_real, c_imag, max_iter):
     zr = 0.0
     zi = 0.0
-
     n = 0
+
     while n < max_iter and (zr * zr + zi * zi) <= 4.0:
         zr_new = zr * zr - zi * zi + c_real
         zi = 2.0 * zr * zi + c_imag
@@ -287,20 +247,23 @@ def mandelbrot_chunk(row_start, row_end, width, height, max_iter, xmin, xmax, ym
 def mandelbrot_serial(width, height, max_iter, xmin, xmax, ymin, ymax):
     return mandelbrot_chunk(0, height, width, height, max_iter, xmin, xmax, ymin, ymax)
 
-warm_args = (256, 256, max_iter, xmin, xmax, ymin, ymax)
-mandelbrot_serial(*warm_args)
 
-numba_serial = profile_call(
-    "mandelbrot (Numba @njit naive loop, warmed up)",
-    mandelbrot_serial,
-    width, height, max_iter, xmin, xmax, ymin, ymax,
-    top=100
-)
+def _worker_func(item):
+    row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax = item
+    return mandelbrot_chunk(row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax)
 
-time_call(
-    "mandelbrot (Numba @njit naive loop, warmed up)",
-    mandelbrot_serial,
-    width, height, max_iter, xmin, xmax, ymin, ymax
-)
+
+def mandelbrot_parallel(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
+    chunk_size = (height + n_workers - 1) // n_workers
+
+    chunks = []
+    for row_start in range(0, height, chunk_size):
+        row_end = min(row_start + chunk_size, height)
+        chunks.append((row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax))
+
+    with mp.Pool(processes=n_workers) as pool:
+        parts = pool.map(_worker_func, chunks)
+
+    return np.vstack(parts)
 
 # ------ L04 MP2 ------
