@@ -6,6 +6,14 @@ import io
 import time
 from numba import float64, njit, prange
 
+# Parameters
+width = 1024
+height = 1024
+max_iter = 100
+xmin, xmax = -2.0, 1.0
+ymin, ymax = -1.5, 1.5
+
+# ------ L01 to L03 MP1 ------
 
 def time_call(label, func, *args):
     t0 = time.perf_counter()
@@ -200,40 +208,6 @@ def mandelbrot_numba_basic(width, height, max_iter, xmin, xmax, ymin, ymax, dtyp
     return mandelbrot_numba_basic_f64(width, height, max_iter, xmin, xmax, ymin, ymax)
 
 
-@njit(parallel=True, fastmath=True)
-def mandelbrot_numba(width, height, max_iter, xmin, xmax, ymin, ymax):
-    img = np.empty((height, width), dtype=np.int32)
-
-    for y in prange(height):
-        im = ymin + (y / (height - 1)) * (ymax - ymin)
-        for x in range(width):
-            re = xmin + (x / (width - 1)) * (xmax - xmin)
-
-            zr = 0.0
-            zi = 0.0
-            cr = re
-            ci = im
-
-            n = 0
-            while n < max_iter and (zr * zr + zi * zi) <= 4.0:
-                zr_new = zr * zr - zi * zi + cr
-                zi = 2.0 * zr * zi + ci
-                zr = zr_new
-                n += 1
-
-            img[y, x] = n
-
-    return img
-
-
-# Parameters
-width = 1024
-height = 1024
-max_iter = 100
-xmin, xmax = -2.0, 1.0
-ymin, ymax = -1.5, 1.5
-
-
 # Profiling & Timing
 
 # Line-profile naive
@@ -279,47 +253,54 @@ time_call(
     width, height, max_iter, xmin, xmax, ymin, ymax, np.float64
 )
 
-# Numba parallel and profiling (warmed up)
-mandelbrot_numba(width, height, max_iter, xmin, xmax, ymin, ymax)
+# ------ L01 to L03 MP1 ------
+# ------ L04 MP2 ------
+@njit(fastmath=True)
+def mandelbrot_pixel(c_real, c_imag, max_iter):
+    zr = 0.0
+    zi = 0.0
 
-numba_data = profile_call(
-    "mandelbrot (Numba, warmed up)",
-    mandelbrot_numba,
+    n = 0
+    while n < max_iter and (zr * zr + zi * zi) <= 4.0:
+        zr_new = zr * zr - zi * zi + c_real
+        zi = 2.0 * zr * zi + c_imag
+        zr = zr_new
+        n += 1
+
+    return n
+
+
+@njit(fastmath=True)
+def mandelbrot_chunk(row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax):
+    img = np.empty((row_end - row_start, width), dtype=np.int32)
+
+    for y in range(row_start, row_end):
+        im = ymin + (y / (height - 1)) * (ymax - ymin)
+
+        for x in range(width):
+            re = xmin + (x / (width - 1)) * (xmax - xmin)
+            img[y - row_start, x] = mandelbrot_pixel(re, im, max_iter)
+
+    return img
+
+
+def mandelbrot_serial(width, height, max_iter, xmin, xmax, ymin, ymax):
+    return mandelbrot_chunk(0, height, width, height, max_iter, xmin, xmax, ymin, ymax)
+
+warm_args = (256, 256, max_iter, xmin, xmax, ymin, ymax)
+mandelbrot_serial(*warm_args)
+
+numba_serial = profile_call(
+    "mandelbrot (Numba @njit naive loop, warmed up)",
+    mandelbrot_serial,
     width, height, max_iter, xmin, xmax, ymin, ymax,
     top=100
 )
 
 time_call(
-    "mandelbrot (Numba, warmed up)",
-    mandelbrot_numba,
+    "mandelbrot (Numba @njit naive loop, warmed up)",
+    mandelbrot_serial,
     width, height, max_iter, xmin, xmax, ymin, ymax
 )
 
-# Plotting
-plt.figure()
-plt.imshow(naive_data, extent=(xmin, xmax, ymin, ymax), origin="lower")
-plt.title("Mandelbrot set (naive Python)")
-plt.xlabel("Re")
-plt.ylabel("Im")
-plt.savefig("mandelbrot_naive.png", dpi=150, bbox_inches="tight")
-
-plt.figure()
-plt.imshow(numpy_data, extent=(xmin, xmax, ymin, ymax), origin="lower")
-plt.title("Mandelbrot set (NumPy)")
-plt.xlabel("Re")
-plt.ylabel("Im")
-plt.savefig("mandelbrot_numpy.png", dpi=150, bbox_inches="tight")
-
-plt.figure()
-plt.imshow(numba_basic, extent=(xmin, xmax, ymin, ymax), origin="lower")
-plt.title("Mandelbrot set (Numba basic float 64)")
-plt.xlabel("Re")
-plt.ylabel("Im")
-plt.savefig("mandelbrot_numba_basic.png", dpi=150, bbox_inches="tight")
-
-plt.figure()
-plt.imshow(numba_data, extent=(xmin, xmax, ymin, ymax), origin="lower")
-plt.title("Mandelbrot set (Numba)")
-plt.xlabel("Re")
-plt.ylabel("Im")
-plt.savefig("mandelbrot_numba_parallel.png", dpi=150, bbox_inches="tight")
+# ------ L04 MP2 ------
