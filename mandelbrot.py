@@ -264,11 +264,19 @@ def build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
     return chunks
 
 
-def mandelbrot_parallel(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
+def mandelbrot_parallel(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers, pool=None):
     chunks = build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers)
+    owns_pool = pool is None
 
-    with mp.Pool(processes=n_workers) as pool:
+    if owns_pool:
+        pool = mp.Pool(processes=n_workers)
+
+    try:
         parts = pool.map(_worker_func, chunks)
+    finally:
+        if owns_pool:
+            pool.close()
+            pool.join()
 
     return np.vstack(parts)
 
