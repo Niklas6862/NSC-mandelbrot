@@ -284,18 +284,8 @@ def mandelbrot_parallel(width, height, max_iter, xmin, xmax, ymin, ymax, n_worke
 def mandelbrot_dask(width, height, max_iter, xmin, xmax, ymin, ymax, n_chunks=32):
     from dask import delayed, compute
 
-    chunk_size = (height + n_chunks - 1) // n_chunks
-    tasks = []
-    row = 0
-
-    while row < height:
-        row_end = min(row + chunk_size, height)
-        tasks.append(
-            delayed(mandelbrot_chunk)(
-                row, row_end, width, height, max_iter, xmin, xmax, ymin, ymax
-            )
-        )
-        row = row_end
+    chunk_args = build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_chunks)
+    tasks = [delayed(mandelbrot_chunk)(*args) for args in chunk_args]
 
     parts = compute(*tasks)
     return np.vstack(parts)
