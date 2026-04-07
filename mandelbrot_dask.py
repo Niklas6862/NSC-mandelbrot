@@ -6,7 +6,7 @@ import statistics
 import time
 
 
-scheduler_address = "tcp://10.92.y.x:8786"
+scheduler_address = "tcp://10.92.1.110:8786"
 width = 4096
 height = 4096
 max_iter = 100
