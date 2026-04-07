@@ -2,11 +2,12 @@ from dask.distributed import Client
 from mandelbrot import mandelbrot_serial, mandelbrot_dask, mandelbrot_chunk
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import statistics
 import time
 
 
-scheduler_address = "tcp://10.92.1.110:8786"
+scheduler_address = os.environ.get("DASK_SCHEDULER_ADDRESS", "tcp://10.92.1.110:8786")
 width = 4096
 height = 4096
 max_iter = 100
@@ -64,7 +65,16 @@ def time_dask_3x(width, height, max_iter, xmin, xmax, ymin, ymax, n_chunks):
 
 
 if __name__ == "__main__":
-    client = Client(scheduler_address)
+    try:
+        client = Client(scheduler_address, timeout="30s")
+    except OSError as e:
+        raise SystemExit(
+            f"Could not connect to Dask scheduler at {scheduler_address}.\n"
+            "Make sure `dask scheduler` is running on the head node,\n"
+            "workers are started with the same scheduler IP,\n"
+            "and port 8786 is open in the Strato security group."
+        ) from e
+
     print(client)
     print(client.run(version_info))
 
