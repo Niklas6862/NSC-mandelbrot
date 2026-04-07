@@ -1,0 +1,125 @@
+2026-04-07 ddf9c64 Now with performance tabel and stratos outputs in mp2 notebook
+
+ MP2.ipynb              | 259 +++++++++++++------------------------------------
+ mandelbrot_dask.py     |   5 -
+ strato_chunk_sweep.png | Bin 0 -> 58444 bytes
+ 3 files changed, 70 insertions(+), 194 deletions(-)
+2026-04-07 87df6ae Endnu en fix
+
+ mandelbrot_dask.py | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+2026-04-07 27881fb fix igen
+
+ mandelbrot_dask.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+2026-04-07 e84762d fix
+
+ MP2.ipynb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+2026-04-06 4d51724 mandelbrot dask distribueret
+
+ MP2.ipynb          | 202 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ mandelbrot_dask.py | 125 +++++++++++++++++++++++++++++++++
+ 2 files changed, 327 insertions(+)
+2026-03-25 e2f0cbd Lecture 6 MP2 M3
+
+ MP2.ipynb | 125 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 125 insertions(+)
+2026-03-25 c9417f7 Lecture 6 MP2 M2
+
+ MP2.ipynb            | 148 ++++++++++++++++++++++++++++++++++++++++++++++-----
+ dask_chunk_sweep.png | Bin 0 -> 49283 bytes
+ mandelbrot.py        |  14 +----
+ 3 files changed, 138 insertions(+), 24 deletions(-)
+2026-03-25 3839d4f Lecture 6 MP2 M1
+
+ MP2.ipynb     | 196 +++++++++++++++++++++++++++++++++++++++++++++++-----------
+ mandelbrot.py |  20 ++++++
+ 2 files changed, 179 insertions(+), 37 deletions(-)
+2026-03-23 758e2eb Corrections from lecture 5
+
+ MP2.ipynb     | 69 +++++++++++++++++++++++++++--------------------------------
+ mandelbrot.py | 12 +++++++++--
+ 2 files changed, 42 insertions(+), 39 deletions(-)
+2026-03-10 f878bb8 M3 from Lecture 04
+
+ MP2.ipynb     | 185 +++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ mandelbrot.py |  10 +++-
+ 2 files changed, 179 insertions(+), 16 deletions(-)
+2026-03-10 0d7af48 Implemented mandelbrot parallel
+
+ MP1.ipynb                     |  58 ++++++++-
+ MP2.ipynb                     | 279 ++++++++++++++----------------------------
+ mandelbrot.py                 |  87 ++++---------
+ mandelbrot_numba_parallel.png | Bin 102746 -> 103589 bytes
+ mandelbrot_numba_serial.png   | Bin 0 -> 103551 bytes
+ 5 files changed, 171 insertions(+), 253 deletions(-)
+2026-03-10 8e5cea3 A bit of clean up, but also implemented mandelbrot_serial
+
+ MP2.ipynb                  | 260 ++++++++++++++++++++++++++++++++++++++++++---
+ mandelbrot.py              | 119 +++++++++------------
+ mandelbrot_numba_basic.png | Bin 104634 -> 103551 bytes
+ 3 files changed, 293 insertions(+), 86 deletions(-)
+2026-03-09 1af198a Renamed "comparison..." to "MP1". started exercises from lecture 4
+
+ ...rison_w_questions_reflection.ipynb => MP1.ipynb |   0
+ MP2.ipynb                                          | 167 +++++++++++++++++++++
+ MP2_exercise.py                                    |  26 ++++
+ gitlog.txt                                         |  56 +++++++
+ 4 files changed, 249 insertions(+)
+2026-03-03 2419dc4 file rename
+
+ comparison.ipynb => comparison_w_questions_reflection.ipynb | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+2026-03-03 1aefe15 Reflections
+
+ comparison.ipynb | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+2026-03-03 a010fcb Added answers
+
+ comparison.ipynb           | 388 ++++++++++++++++-----------------------------
+ mandelbrot.py              |  35 +++-
+ mandelbrot_numba_basic.png | Bin 103636 -> 104634 bytes
+ requirements.txt           |  15 +-
+ 4 files changed, 178 insertions(+), 260 deletions(-)
+2026-03-03 baec14b Added comparison notebook
+
+ comparison.ipynb                                   | 374 ++++++++++++++++++++-
+ mandelbrot.py                                      |  90 +++--
+ mandelbrot_numba_basic.png                         | Bin 0 -> 103636 bytes
+ ...brot_numba.png => mandelbrot_numba_parallel.png | Bin
+ 4 files changed, 436 insertions(+), 28 deletions(-)
+2026-03-02 0a7c29b Added iterations of numba implementation
+
+ comparison.ipynb |  10 +++
+ mandelbrot.py    | 187 +++++++++++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 149 insertions(+), 48 deletions(-)
+2026-03-02 c2719e7 added mondelbrot created by numba
+
+ mandelbrot.py        |  67 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ mandelbrot_numba.png | Bin 0 -> 102746 bytes
+ requirements.txt     |   4 ++-
+ 3 files changed, 69 insertions(+), 2 deletions(-)
+2026-03-02 730aec5 Added mandelbrot using numpy
+
+ mandelbrot.png       | Bin 60081 -> 0 bytes
+ mandelbrot.py        |  72 ++++++++++++++++++++++++++++++++++++++++++---------
+ mandelbrot_naive.png | Bin 0 -> 103379 bytes
+ mandelbrot_numpy.png | Bin 0 -> 102947 bytes
+ 4 files changed, 60 insertions(+), 12 deletions(-)
+2026-03-02 561c9ca added cProfile
+
+ mandelbrot.png   | Bin 0 -> 60081 bytes
+ mandelbrot.py    |  16 ++++++++--------
+ requirements.txt |   5 ++++-
+ 3 files changed, 12 insertions(+), 9 deletions(-)
+2026-02-18 555d244 Initial mandelbrot
+
+ mandelbrot.py    | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ requirements.txt |  6 ++++++
+ 2 files changed, 56 insertions(+)
+2026-02-18 ee694a5 Initial commit
+
+ .gitignore | 207 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ README.md  |   1 +
+ 2 files changed, 208 insertions(+)
