@@ -127,9 +127,4 @@ if __name__ == "__main__":
     plt.show()
 
     print()
-    print("For worker scaling:")
-    print("1. Start with one worker VM connected and run this script.")
-    print("2. Add another worker VM and run this script again.")
-    print("3. Record worker processes, wall time, and speedup vs serial each time.")
-
     client.close()
