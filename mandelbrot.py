@@ -290,4 +290,38 @@ def mandelbrot_dask(width, height, max_iter, xmin, xmax, ymin, ymax, n_chunks=32
     parts = compute(*tasks)
     return np.vstack(parts)
 
+
+def mandelbrot_trajectory_divergence(
+    width, height, max_iter, xmin, xmax, ymin, ymax, tau=0.01
+):
+    x = np.linspace(xmin, xmax, width)
+    y = np.linspace(ymin, ymax, height)
+
+    c64 = (x[np.newaxis, :] + 1j * y[:, np.newaxis]).astype(np.complex128)
+    c32 = c64.astype(np.complex64)
+
+    z64 = np.zeros_like(c64)
+    z32 = np.zeros_like(c32)
+
+    diverge = np.full((height, width), max_iter, dtype=np.int32)
+    active = np.ones((height, width), dtype=bool)
+
+    for k in range(max_iter):
+        if not active.any():
+            break
+
+        z32[active] = z32[active] * z32[active] + c32[active]
+        z64[active] = z64[active] * z64[active] + c64[active]
+
+        diff = (
+            np.abs(z32.real.astype(np.float64) - z64.real)
+            + np.abs(z32.imag.astype(np.float64) - z64.imag)
+        )
+        newly_diverged = active & (diff > tau)
+
+        diverge[newly_diverged] = k + 1
+        active[newly_diverged] = False
+
+    return diverge
+
 # ------ L04 MP2 ------
