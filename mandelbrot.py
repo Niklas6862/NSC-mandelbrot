@@ -365,6 +365,41 @@ def mandelbrot_sensitivity_map_kernel(
 
 
 def mandelbrot_sensitivity_map(width, height, max_iter, xmin, xmax, ymin, ymax):
+    """Approximate a per-pixel Mandelbrot sensitivity map over a 2D region.
+
+    Parameters
+    ----------
+    width : int
+        Number of sample points along the real axis.
+    height : int
+        Number of sample points along the imaginary axis.
+    max_iter : int
+        Maximum number of Mandelbrot iterations used for each pixel.
+    xmin : float
+        Lower bound of the real-axis interval.
+    xmax : float
+        Upper bound of the real-axis interval.
+    ymin : float
+        Lower bound of the imaginary-axis interval.
+    ymax : float
+        Upper bound of the imaginary-axis interval.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        A tuple ``(kappa, n_base, n_perturb)`` where ``kappa`` is the
+        condition-number approximation for each pixel, ``n_base`` is the
+        unperturbed escape-count map, and ``n_perturb`` is the escape-count
+        map after perturbing the real part by ``eps32 * |c|``.
+
+    Examples
+    --------
+    >>> kappa, n_base, n_perturb = mandelbrot_sensitivity_map(
+    ...     64, 64, 100, -0.7530, -0.7490, 0.0990, 0.1030
+    ... )
+    >>> kappa.shape
+    (64, 64)
+    """
     return mandelbrot_sensitivity_map_kernel(
         width, height, max_iter, xmin, xmax, ymin, ymax
     )
