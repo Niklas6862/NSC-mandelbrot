@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import numpy as np
-import matplotlib.pyplot as plt
+import numpy.typing as npt
 import cProfile
 import pstats
 import io
 import time
-from numba import float64, njit, prange
+from numba import njit, prange
+from multiprocessing.pool import Pool
+import multiprocessing as mp
 
 # Parameters
 width = 1024
@@ -210,15 +214,30 @@ def mandelbrot_numba_basic(width, height, max_iter, xmin, xmax, ymin, ymax, dtyp
 # ------ L01 to L03 MP1 ------
 # ------ L04 MP2 ------
 
-import numpy as np
-from numba import njit
-import multiprocessing as mp
-
 EPS32 = np.float64(np.finfo(np.float32).eps)
+ChunkArgs = tuple[int, int, int, int, int, float, float, float, float]
 
 
 @njit(fastmath=True)
-def mandelbrot_pixel(c_real, c_imag, max_iter):
+def mandelbrot_pixel(c_real: float, c_imag: float, max_iter: int) -> int:
+    """Compute the Mandelbrot escape count for a single complex coordinate.
+
+    Parameters
+    ----------
+    c_real : float
+        Real part of the complex coordinate ``c``.
+    c_imag : float
+        Imaginary part of the complex coordinate ``c``.
+    max_iter : int
+        Maximum number of iterations allowed before treating the point as
+        non-escaping.
+
+    Returns
+    -------
+    int
+        Number of iterations completed before escape, or ``max_iter`` if the
+        point does not escape within the iteration limit.
+    """
     zr = 0.0
     zi = 0.0
     n = 0
@@ -233,7 +252,46 @@ def mandelbrot_pixel(c_real, c_imag, max_iter):
 
 
 @njit(fastmath=True)
-def mandelbrot_chunk(row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax):
+def mandelbrot_chunk(
+    row_start: int,
+    row_end: int,
+    width: int,
+    height: int,
+    max_iter: int,
+    xmin: float,
+    xmax: float,
+    ymin: float,
+    ymax: float,
+) -> npt.NDArray[np.int32]:
+    """Compute a contiguous band of Mandelbrot rows.
+
+    Parameters
+    ----------
+    row_start : int
+        First row index included in the chunk.
+    row_end : int
+        Row index just past the end of the chunk.
+    width : int
+        Number of columns in the output grid.
+    height : int
+        Total grid height, used to map row indices to imaginary coordinates.
+    max_iter : int
+        Maximum number of Mandelbrot iterations per pixel.
+    xmin : float
+        Lower bound of the real-axis interval.
+    xmax : float
+        Upper bound of the real-axis interval.
+    ymin : float
+        Lower bound of the imaginary-axis interval.
+    ymax : float
+        Upper bound of the imaginary-axis interval.
+
+    Returns
+    -------
+    numpy.ndarray
+        Two-dimensional ``int32`` array containing escape counts for the rows
+        in ``[row_start, row_end)``.
+    """
     img = np.empty((row_end - row_start, width), dtype=np.int32)
 
     for y in range(row_start, row_end):
@@ -246,16 +304,84 @@ def mandelbrot_chunk(row_start, row_end, width, height, max_iter, xmin, xmax, ym
     return img
 
 
-def mandelbrot_serial(width, height, max_iter, xmin, xmax, ymin, ymax):
+def mandelbrot_serial(
+    width: int,
+    height: int,
+    max_iter: int,
+    xmin: float,
+    xmax: float,
+    ymin: float,
+    ymax: float,
+) -> npt.NDArray[np.int32]:
+    """Compute a full Mandelbrot image on one process.
+
+    Parameters
+    ----------
+    width : int
+        Number of sample points along the real axis.
+    height : int
+        Number of sample points along the imaginary axis.
+    max_iter : int
+        Maximum number of Mandelbrot iterations per pixel.
+    xmin : float
+        Lower bound of the real-axis interval.
+    xmax : float
+        Upper bound of the real-axis interval.
+    ymin : float
+        Lower bound of the imaginary-axis interval.
+    ymax : float
+        Upper bound of the imaginary-axis interval.
+
+    Returns
+    -------
+    numpy.ndarray
+        Full ``height x width`` escape-count image as an ``int32`` array.
+    """
     return mandelbrot_chunk(0, height, width, height, max_iter, xmin, xmax, ymin, ymax)
 
 
-def _worker_func(item):
+def _worker_func(item: ChunkArgs) -> npt.NDArray[np.int32]:
     row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax = item
     return mandelbrot_chunk(row_start, row_end, width, height, max_iter, xmin, xmax, ymin, ymax)
 
 
-def build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
+def build_chunks(
+    width: int,
+    height: int,
+    max_iter: int,
+    xmin: float,
+    xmax: float,
+    ymin: float,
+    ymax: float,
+    n_workers: int,
+) -> list[ChunkArgs]:
+    """Split a Mandelbrot grid into row chunks for parallel execution.
+
+    Parameters
+    ----------
+    width : int
+        Number of sample points along the real axis.
+    height : int
+        Number of sample points along the imaginary axis.
+    max_iter : int
+        Maximum number of Mandelbrot iterations per pixel.
+    xmin : float
+        Lower bound of the real-axis interval.
+    xmax : float
+        Upper bound of the real-axis interval.
+    ymin : float
+        Lower bound of the imaginary-axis interval.
+    ymax : float
+        Upper bound of the imaginary-axis interval.
+    n_workers : int
+        Number of worker partitions to target when splitting rows.
+
+    Returns
+    -------
+    list of tuple
+        Chunk argument tuples that can be passed directly to worker
+        functions for serial or multiprocessing execution.
+    """
     chunk_size = (height + n_workers - 1) // n_workers
     chunks = []
 
@@ -266,7 +392,47 @@ def build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers):
     return chunks
 
 
-def mandelbrot_parallel(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers, pool=None):
+def mandelbrot_parallel(
+    width: int,
+    height: int,
+    max_iter: int,
+    xmin: float,
+    xmax: float,
+    ymin: float,
+    ymax: float,
+    n_workers: int,
+    pool: Pool | None = None,
+) -> npt.NDArray[np.int32]:
+    """Compute a Mandelbrot image with a multiprocessing pool.
+
+    Parameters
+    ----------
+    width : int
+        Number of sample points along the real axis.
+    height : int
+        Number of sample points along the imaginary axis.
+    max_iter : int
+        Maximum number of Mandelbrot iterations per pixel.
+    xmin : float
+        Lower bound of the real-axis interval.
+    xmax : float
+        Upper bound of the real-axis interval.
+    ymin : float
+        Lower bound of the imaginary-axis interval.
+    ymax : float
+        Upper bound of the imaginary-axis interval.
+    n_workers : int
+        Number of worker processes to use when creating chunk tasks.
+    pool : multiprocessing.pool.Pool or None, optional
+        Existing pool to reuse. If ``None``, the function creates and owns a
+        new pool for the duration of the call.
+
+    Returns
+    -------
+    numpy.ndarray
+        Full ``height x width`` escape-count image assembled from the worker
+        chunks.
+    """
     chunks = build_chunks(width, height, max_iter, xmin, xmax, ymin, ymax, n_workers)
     owns_pool = pool is None
 
