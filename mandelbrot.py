@@ -214,6 +214,8 @@ import numpy as np
 from numba import njit
 import multiprocessing as mp
 
+EPS32 = np.float64(np.finfo(np.float32).eps)
+
 
 @njit(fastmath=True)
 def mandelbrot_pixel(c_real, c_imag, max_iter):
@@ -323,5 +325,48 @@ def mandelbrot_trajectory_divergence(
         active[newly_diverged] = False
 
     return diverge
+
+
+@njit(parallel=True, fastmath=True)
+def mandelbrot_sensitivity_map_kernel(
+    width, height, max_iter, xmin, xmax, ymin, ymax
+):
+    kappa = np.empty((height, width), dtype=np.float64)
+    n_base = np.empty((height, width), dtype=np.float64)
+    n_perturb = np.empty((height, width), dtype=np.float64)
+
+    xmin_f = np.float64(xmin)
+    xmax_f = np.float64(xmax)
+    ymin_f = np.float64(ymin)
+    ymax_f = np.float64(ymax)
+
+    for y in prange(height):
+        im = ymin_f + (np.float64(y) / (height - 1)) * (ymax_f - ymin_f)
+
+        for x in range(width):
+            re = xmin_f + (np.float64(x) / (width - 1)) * (xmax_f - xmin_f)
+            base = mandelbrot_pixel(re, im, max_iter)
+
+            delta = EPS32 * np.sqrt(re * re + im * im)
+            if delta < 1e-10:
+                delta = 1e-10
+
+            perturb = mandelbrot_pixel(re + delta, im, max_iter)
+
+            n_base[y, x] = base
+            n_perturb[y, x] = perturb
+
+            if base > 0:
+                kappa[y, x] = np.abs(perturb - base) / (EPS32 * base)
+            else:
+                kappa[y, x] = np.nan
+
+    return kappa, n_base, n_perturb
+
+
+def mandelbrot_sensitivity_map(width, height, max_iter, xmin, xmax, ymin, ymax):
+    return mandelbrot_sensitivity_map_kernel(
+        width, height, max_iter, xmin, xmax, ymin, ymax
+    )
 
 # ------ L04 MP2 ------
