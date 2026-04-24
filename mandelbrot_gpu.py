@@ -20,8 +20,8 @@ __kernel void mandelbrot(
         return;
     }
 
-    float c_real = x_min + col * (x_max - x_min) / (float)(N - 1);
-    float c_imag = y_min + row * (y_max - y_min) / (float)(N - 1);
+    float c_real = x_min + col * (x_max - x_min) / (float)N;
+    float c_imag = y_min + row * (y_max - y_min) / (float)N;
 
     float zr = 0.0f;
     float zi = 0.0f;
@@ -61,7 +61,7 @@ def main() -> None:
     image = np.zeros((N, N), dtype=np.int32)
     image_dev = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, image.nbytes)
 
-    # Warm up with a small launch so build and first-run overhead are paid once.
+    # Warm up once so the first measured launch does not include kernel JIT work.
     prog.mandelbrot(
         queue,
         (64, 64),
@@ -76,6 +76,7 @@ def main() -> None:
     )
     queue.finish()
 
+    # Time the real launch and stop the clock only after the queue is finished.
     t0 = time.perf_counter()
     prog.mandelbrot(
         queue,
